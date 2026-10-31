@@ -73,8 +73,33 @@ li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
 .secret .m-head{color:var(--stamp)}
 .ko-i{font:400 12px var(--f-kr);color:var(--muted);margin-left:4px}
 .mission p,.secret p{margin:0;font:500 16px/1.55 var(--f-cn)}
+.mission .big{font-size:20px;font-weight:700}
 .mission .ok{font-size:14px;font-weight:400}
 .mission .ko,.secret .ko{font-size:12.5px;margin-top:2px}
+.decide{display:flex;flex-direction:column;gap:12px}
+.decide h3{margin:0;font:700 17px var(--f-cn)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{background:var(--bg);color:var(--ink);border:1.5px solid var(--line);padding:9px 14px;font:500 16px var(--f-cn);border-radius:999px}
+.chips button[aria-pressed="true"]{background:var(--accent);color:var(--paper);border-color:var(--accent)}
+.res{display:flex;flex-direction:column;gap:10px}
+.verdict{font:700 24px var(--f-cn);margin:0}
+.verdict.ok{color:var(--accent)} .verdict.no{color:var(--stamp)}
+.line{margin:0;font:400 16px/1.5 var(--f-cn)}
+.line .ko{font-size:13px}
+.sm{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:15px;align-items:baseline}
+.sm b{font-family:var(--f-cn)}
+.go{background:var(--stamp)}
+#vbanner .secret{background:var(--paper);border-width:2.5px}
+#vbanner .m-head{font-size:18px}
+@media (prefers-reduced-motion:no-preference){#vbanner:not([hidden]){animation:pop .5s ease-out}@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:none}}}
+.code{display:flex;flex-direction:column;gap:4px;align-items:center;background:var(--wash);border-radius:8px;padding:12px}
+.code b{font:700 24px var(--f-cn);letter-spacing:.04em;font-variant-numeric:tabular-nums;text-align:center}
+.rv{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.rv.me{border-color:var(--accent);border-width:2px}
+.rv-h{display:flex;align-items:center;gap:8px;font-family:var(--f-cn)}
+.rv p{margin:0;font:400 15px/1.5 var(--f-cn)}
+.rv .ko{font-size:12.5px}
+.tag{background:var(--accent);color:var(--paper);font:700 12px var(--f-kr);padding:1px 7px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -85,6 +110,7 @@ li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
     <p>모둠 번호와 자리를 고르면 내 역할 카드가 열립니다.</p>
   </header>
 
+  <div id="vbanner" hidden></div>
   <div id="team"></div>
   <section class="panel" id="picker">
     <label>① 모둠 번호</label>
@@ -93,6 +119,16 @@ li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
     <div class="pick seat" id="seats"></div>
     <button type="button" class="open" id="openRole" disabled>내 카드 열기</button>
     <button type="button" class="link" id="toCode">선생님이 알려 준 번호로 열기</button>
+  </section>
+
+  <section class="panel decide" id="decide" hidden>
+    <h3>去哪个医院？<span class="ko-i">어느 병원</span></h3><div class="chips" id="dH"></div>
+    <h3>怎么去？<span class="ko-i">무엇을 타고</span></h3><div class="chips" id="dT"></div>
+    <h3>谁陪 A 去？<span class="ko-i">누가 같이</span></h3><div class="chips" id="dC"></div>
+    <h3>变化卡 <span class="ko-i">모둠이 받은 변수 카드</span></h3><div class="chips" id="dV"></div>
+    <button type="button" class="open" id="calc" disabled>结果是…？ 결과 보기</button>
+    <div class="res" id="res" hidden></div>
+    <button type="button" class="link" id="backPick">내 카드로 돌아가기</button>
   </section>
 
   <form class="panel" id="form" autocomplete="off" hidden>
@@ -110,7 +146,7 @@ li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
 
 <script>
 const RULE='卡片不能给别人看，只能用汉语说。<span class="ko">카드를 보여 주지 말고, 중국어로만 말하세요.</span>';
-const TEAM='<div class="mission"><div class="m-head">小组任务 <span class="ko-i">모둠 미션</span></div><p>让 A 今天能看病。<br>去哪个医院？谁陪 A 去？怎么去？<span class="ko">A가 오늘 진료를 받게 하라. 어느 병원에, 누구와, 무엇을 타고 갈지 정하라.</span></p><p class="ok">成功条件：① 来得及看病 ② 钱够 ③ 大家的时间都没问题<span class="ko">성공 조건: ① 마감 전에 도착 ② 돈이 모자라지 않음 ③ 모두의 일정을 지킴</span></p></div>';
+const TEAM='<div class="mission"><div class="m-head">小组任务 <span class="ko-i">모둠 미션</span></div><p class="big">让 A 今天见到医生。<span class="ko">A가 오늘 의사를 만나게 하라.</span></p></div>';
 document.getElementById('team').innerHTML=TEAM;
 const ASK='请再想一想：你们的决定要改吗？<span class="ko">결정을 바꿔야 할까요?</span>';
 const CARDS={
@@ -131,23 +167,23 @@ const CARDS={
  "5301":{kind:"变化卡 1 · 변수 카드",role:"堵车",ko:"교통 체증",stamp:"变化",items:[
    '路上堵车，打车要多 15 分钟。<span class="ko">길이 막혀서 택시가 15분 더 걸립니다.</span>'],words:[["堵车","길이 막히다"]],ask:true},
  "6420":{kind:"变化卡 2 · 변수 카드",role:"取消",ko:"수업 취소",stamp:"变化",items:[
-   '朋友的汉语课取消了。<span class="ko">친구의 중국어 수업이 취소되었습니다.</span>'],words:[["取消","취소하다"]],ask:true},
+   'B 的汉语课取消了。<span class="ko">B의 중국어 수업이 취소되었습니다.</span>'],words:[["取消","취소하다"]],ask:true},
  "7539":{kind:"变化卡 3 · 변수 카드",role:"下雨",ko:"비",stamp:"变化",items:[
    '下雨了，公交车很慢，要多 20 分钟。<span class="ko">비가 와서 버스가 20분 더 걸립니다.</span>'],ask:true},
  "8648":{kind:"变化卡 4 · 변수 카드",role:"借钱",ko:"돈 빌리기",stamp:"变化",items:[
-   '宿舍管理员可以借你 20 块钱。<span class="ko">관리인이 20위안을 빌려줄 수 있습니다.</span>'],words:[["借","빌려주다"]],ask:true}
+   '宿舍管理员可以借 A 20 块钱。<span class="ko">관리인이 A에게 20위안을 빌려줄 수 있습니다.</span>'],words:[["借","빌려주다"]],ask:true}
 };
 const VAR={"A":"5301","B":"6420","C":"7539","D":"8648"};
 const PERMS=[["2718","3142","1618"],["3142","1618","2718"],["1618","2718","3142"],["2718","1618","3142"],["3142","2718","1618"],["1618","3142","2718"]];
 const $=id=>document.getElementById(id);
 const picker=$('picker'),form=$('form'),input=$('code'),err=$('err'),out=$('out');
-let group=null,seat=null;
+let group=null,seat=null,lastCode=null;
 function buttons(box,labels,onPick){labels.forEach((t,i)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-pressed','false');
   b.addEventListener('click',()=>{[...box.children].forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');onPick(i);});box.appendChild(b);});}
 buttons($('groups'),['1','2','3','4','5','6','7','8'],i=>{group=i;ready();});
 buttons($('seats'),['가','나','다','라'],i=>{seat=i;ready();});
 function ready(){$('openRole').disabled=!(group!==null&&seat!==null);}
-$('openRole').addEventListener('click',()=>show(seat===3?'4271':PERMS[group%6][seat],picker));
+$('openRole').addEventListener('click',()=>{show(seat===3?'4271':PERMS[group%6][seat],picker);armVariable(group+1,seat);});
 $('toCode').addEventListener('click',()=>{picker.hidden=true;form.hidden=false;input.focus();});
 $('toPick').addEventListener('click',()=>{form.hidden=true;picker.hidden=false;});
 input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(0,4);err.textContent='';});
@@ -166,12 +202,83 @@ function show(code,from){const c=CARDS[code];
     </div>
     ${c.rule?`<p class="rule">${RULE}</p>`:''}
   </article>
+  ${c.secret?'<button type="button" class="open go" id="decideBtn">我们决定了！ 결정 입력하기</button>':''}
   <button type="button" class="again" id="again">처음으로</button>`;
-  picker.hidden=true;form.hidden=true;out.hidden=false;$('team').hidden=true;
+  lastCode=code;picker.hidden=true;form.hidden=true;out.hidden=false;$('team').hidden=true;
+  if($('decideBtn'))$('decideBtn').addEventListener('click',()=>{out.hidden=true;$('decide').hidden=false;$('team').hidden=false;window.scrollTo({top:0});});
   $('again').addEventListener('click',()=>{out.hidden=true;out.innerHTML='';picker.hidden=false;$('team').hidden=false;input.value='';
     if(location.hash){history.replaceState(null,'',location.pathname);}});}
 function fromHash(){const k=location.hash.replace('#','');if(VAR[k])show(VAR[k]);}
 window.addEventListener('hashchange',fromHash);fromHash();
+
+/* ---- 시간이 지나면 변수 카드 자동 표시 ---- */
+const MINUTES=(()=>{const m=location.hash.match(/^#t(\d+)$/);return m?+m[1]:10;})();
+const today=new Date().toISOString().slice(0,10);
+function seedOf(g){let h=g*131;for(const ch of today)h=(h*31+ch.charCodeAt(0))%100003;return h;}
+function varFor(g){const h=seedOf(g);return {card:String(1+h%4),seat:Math.floor(h/7)%3};}
+let vtimer=null;
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
+function armVariable(g,st){
+  const plan=varFor(g); if(st!==plan.seat) return;
+  const key=`hc-${today}-${g}-${st}`;let start=+store(key);
+  if(!start){start=Date.now();store(key,String(start));}
+  clearTimeout(vtimer);
+  const wait=Math.max(0,start+MINUTES*60000-Date.now());
+  vtimer=setTimeout(()=>fireVariable(plan.card),wait);
+}
+function fireVariable(v){const c=CARDS[VCODE[v]];
+  $('vbanner').innerHTML=`<div class="secret"><div class="m-head">变化卡来了！ <span class="ko-i">변수 카드가 도착했어요 · 모둠에 중국어로 알리세요</span></div>
+    <div class="ko-i" style="margin:0">${c.kind}</div><p>${c.items[0]}</p></div>`;
+  $('vbanner').hidden=false;window.scrollTo({top:0,behavior:'smooth'});
+  try{navigator.vibrate&&navigator.vibrate([300,150,300]);}catch(e){}
+}
+
+/* ---- 결정 → 결과 ---- */
+const HOSP={small:{cn:"小医院",close:10,r:{walk:[20,0],taxi:[5,10],bike:[10,0]}},
+            big:{cn:"大医院",close:130,trans:true,r:{taxi:[20,35],bus:[40,2]}},
+            school:{cn:"校医院",close:70,r:{walk:[10,0]}}};
+const TR={walk:"走路",taxi:"打车",bus:"坐公交车",bike:"骑车"};
+const WHO={alone:"一个人去",B:"B",C:"C",D:"D"};
+const VCODE={"1":"5301","2":"6420","3":"7539","4":"8648"};
+const sel={h:null,t:null,c:null,v:"0"};
+function chips(box,obj,key,pre){Object.entries(obj).forEach(([k,t])=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-pressed',String(k===pre));
+  b.addEventListener('click',()=>{[...box.children].forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');sel[key]=k;
+  $('res').hidden=true;$('calc').disabled=!(sel.h&&sel.t&&sel.c);});box.appendChild(b);});}
+chips($('dH'),{small:"小医院",big:"大医院",school:"校医院"},'h');
+chips($('dT'),TR,'t');chips($('dC'),WHO,'c');
+chips($('dV'),{"0":"没有","1":"1 堵车","2":"2 取消","3":"3 下雨","4":"4 借钱"},'v',"0");
+const clock=m=>{const t=15*60+50+m;return `下午 ${Math.floor(t/60)-12}:${String(t%60).padStart(2,'0')}`;};
+const L=(cn,ko)=>`<p class="line">${cn}<span class="ko">${ko}</span></p>`;
+$('calc').addEventListener('click',()=>{
+  const H=HOSP[sel.h],r=H.r[sel.t],v=sel.v;
+  if(!r){show2(`<p class="verdict no">没有这条路的信息。</p>`+L('请再看看大家的卡片。','카드에 이 길(병원+교통수단)에 대한 정보가 없어요. 다시 확인해 보세요.'));return;}
+  let [min,cost]=r,ok=true;const lines=[];
+  if(sel.t==='taxi'&&v==='1')min+=15;
+  if(sel.t==='bus'&&v==='3')min+=20;
+  const money=20+(v==='4'?20:0);
+  if(min<H.close) lines.push(L(`${clock(min)} 到${H.cn}，${H.cn}${clock(H.close)}停止看病，来得及。`,'마감 전에 도착합니다.'));
+  else {ok=false;lines.push(L(`${clock(min)} 到${H.cn}，可是${H.cn}${clock(H.close)}停止看病，来不及了。`,'마감 시간에 늦었습니다.'));}
+  if(cost<=money) lines.push(L(cost?`${TR[sel.t]}要 ${cost} 块，A 有 ${money} 块，钱够。`:'不要钱。',cost?'돈이 충분합니다.':'돈이 들지 않습니다.'));
+  else {ok=false;lines.push(L(`${TR[sel.t]}要 ${cost} 块，可是 A 只有 ${money} 块，钱不够。`,'돈이 모자랍니다.'));}
+  if(ok){ if(H.trans) lines.push(L('医院有韩语翻译，A 听得懂医生的话。','통역이 있어 A가 의사 말을 알아듣습니다.'));
+    else if(sel.c!=='alone') lines.push(L(`${sel.c} 陪 A，帮 A 听医生的话。`,`${sel.c}가 옆에서 도와줍니다.`));
+    else lines.push(L('没有翻译，也没有人陪，A 听不太懂医生的话。','통역도 동행도 없어 A가 의사 말을 잘 못 알아듣습니다.'));}
+  const bLate=sel.c==='B'&&sel.h!=='small'&&v!=='2';
+  const RC={A:"2718",B:"3142",C:"1618",D:"4271"};
+  const done={A:sel.c!=='alone',B:!bLate,C:sel.h==='big',D:sel.h==='school'};
+  const HS={small:"小",big:"大",school:"校"},TS={walk:"走",taxi:"打车",bus:"公交",bike:"骑"};
+  const codeStr=`${HS[sel.h]} · ${TS[sel.t]} · ${sel.c==='alone'?'一人':sel.c+'陪'} · ${v==='0'?'无':'变'+v}`;
+  const reveal=Object.entries(RC).map(([w,code])=>{const c=CARDS[code];const me=code===lastCode;
+    return `<div class="rv${me?' me':''}"><div class="rv-h"><b>${done[w]?'✓':'✗'} ${w} ${c.role}</b>${me?'<span class="tag">나</span>':''}${w==='D'?'<span class="ko-i">4명 모둠</span>':''}</div>
+      <p>${c.secret[0]}<span class="ko">${c.secret[1]}</span></p></div>`;}).join('');
+  show2(`<div class="code"><span class="ko-i">결정 코드 · 모둠원과 화면을 맞대 보세요</span><b>${codeStr}</b></div>
+    <p class="verdict ${ok?'ok':'no'}">${ok?'A 见到医生了！':'A 没见到医生。'}</p>
+    <span class="ko">${ok?'모둠 미션 성공!':'모둠 미션 실패.'}</span>${lines.join('')}
+    <div class="m-head">秘密任务公开 <span class="ko-i">모두의 비밀 미션 공개 · 이건 게임이었어요!</span></div>
+    ${reveal}`);
+});
+function show2(html){$('res').innerHTML=html;$('res').hidden=false;$('res').scrollIntoView({behavior:'smooth',block:'nearest'});}
+$('backPick').addEventListener('click',()=>{$('res').hidden=true;$('decide').hidden=true;show(lastCode);});
 </script>
 </body>
 </html>
