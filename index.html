@@ -66,6 +66,15 @@ li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
 .open:disabled{opacity:.4;cursor:default}
 .hint{font-size:13px;color:var(--muted);margin:0}
 .link{background:none;color:var(--muted);padding:0;font-size:14px;text-decoration:underline;align-self:center}
+.mission,.secret{border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.mission{background:var(--wash)}
+.secret{border:1.5px dashed var(--stamp)}
+.m-head{font:700 15px var(--f-cn);color:var(--accent)}
+.secret .m-head{color:var(--stamp)}
+.ko-i{font:400 12px var(--f-kr);color:var(--muted);margin-left:4px}
+.mission p,.secret p{margin:0;font:500 16px/1.55 var(--f-cn)}
+.mission .ok{font-size:14px;font-weight:400}
+.mission .ko,.secret .ko{font-size:12.5px;margin-top:2px}
 </style>
 </head>
 <body>
@@ -76,6 +85,7 @@ li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
     <p>모둠 번호와 자리를 고르면 내 역할 카드가 열립니다.</p>
   </header>
 
+  <div id="team"></div>
   <section class="panel" id="picker">
     <label>① 모둠 번호</label>
     <div class="pick" id="groups"></div>
@@ -100,22 +110,24 @@ li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
 
 <script>
 const RULE='卡片不能给别人看，只能用汉语说。<span class="ko">카드를 보여 주지 말고, 중국어로만 말하세요.</span>';
+const TEAM='<div class="mission"><div class="m-head">小组任务 <span class="ko-i">모둠 미션</span></div><p>让 A 今天能看病。<br>去哪个医院？谁陪 A 去？怎么去？<span class="ko">A가 오늘 진료를 받게 하라. 어느 병원에, 누구와, 무엇을 타고 갈지 정하라.</span></p><p class="ok">成功条件：① 来得及看病 ② 钱够 ③ 大家的时间都没问题<span class="ko">성공 조건: ① 마감 전에 도착 ② 돈이 모자라지 않음 ③ 모두의 일정을 지킴</span></p></div>';
+document.getElementById('team').innerHTML=TEAM;
 const ASK='请再想一想：你们的决定要改吗？<span class="ko">결정을 바꿔야 할까요?</span>';
 const CARDS={
  "2718":{kind:"角色卡 1 · 역할 카드",role:"病人",ko:"환자",name:"A",items:[
-   "我是 A，是留学生。","我发烧，头疼。","吃了药，但是没有好转。","我汉语不太好，怕听不懂医生的话。","我钱包里只有 20 块钱。","我今天一定要看病。"],words:[["留学生","유학생"]],rule:true},
+   "我是 A，是留学生。","我发烧，头疼。","吃了药，但是没有好转。","我汉语不太好，怕听不懂医生的话。","我钱包里只有 20 块钱。","我今天一定要看病。"],words:[["留学生","유학생"]],rule:true,secret:["你不想一个人去医院。让一个人陪你去！","혼자 병원에 가기 싫다. 누군가가 같이 가 주게 만들어라!"]},
  "3142":{kind:"角色卡 2 · 역할 카드",role:"朋友",ko:"친구",name:"B",items:[
    "我是 B，是 A 的中国朋友。","我五点有汉语课，不能迟到。",
    '我有地图：<span class="sub">小医院：走路 20 分钟，打车 5 分钟</span><span class="sub">大医院：打车 20 分钟，坐公交车 40 分钟</span>',
-   "我想帮 A，可是汉语课也很重要。"],words:[["公交车","버스"]],rule:true},
+   "我想帮 A，可是汉语课也很重要。"],words:[["公交车","버스"]],rule:true,secret:["帮 A 去看病，可是五点的汉语课一定不能迟到！","A가 진료받게 돕되, 5시 수업에는 절대 늦지 마라!"]},
  "1618":{kind:"角色卡 3 · 역할 카드",role:"宿舍管理员",ko:"기숙사 관리인",name:"C",items:[
    "我是 C，是宿舍管理员。","小医院：四点停止看病，没有翻译。","大医院：六点停止看病，有韩语翻译。",
-   "打车：到小医院 10 块，到大医院 35 块。","坐公交车：2 块。"],words:[["停止看病","진료 마감"],["翻译","통역"]],rule:true},
+   "打车：到小医院 10 块，到大医院 35 块。","坐公交车：2 块。"],words:[["停止看病","진료 마감"],["翻译","통역"],["说服","설득하다"]],rule:true,secret:["你觉得大医院最好，因为有翻译。说服大家去大医院！","큰 병원이 가장 좋다고 생각한다(통역이 있으니까). 모두가 큰 병원에 가도록 설득하라!"]},
  "4271":{kind:"角色卡 4 · 확장 카드 (4명 모둠)",role:"室友",ko:"룸메이트",name:"D",items:[
    "我是 D，是 A 的室友。","我会说一点儿韩语。",
    '学校里有校医院：<span class="sub">走路 10 分钟，五点停止看病，不要钱。</span><span class="sub">可是今天人很多，要等一个小时。</span>',
    "我有自行车，骑车到小医院 10 分钟。",
-   "我六点要去打工，不能晚。"],words:[["室友","룸메이트"],["校医院","교내 병원"],["骑车","자전거를 타다"],["打工","아르바이트하다"]],rule:true},
+   "我六点要去打工，不能晚。"],words:[["室友","룸메이트"],["校医院","교내 병원"],["骑车","자전거를 타다"],["打工","아르바이트하다"],["说服","설득하다"]],rule:true,secret:["你觉得校医院最好，因为不要钱。说服大家去校医院！","교내 병원이 가장 좋다고 생각한다(돈이 안 드니까). 모두가 교내 병원에 가도록 설득하라!"]},
  "5301":{kind:"变化卡 1 · 변수 카드",role:"堵车",ko:"교통 체증",stamp:"变化",items:[
    '路上堵车，打车要多 15 分钟。<span class="ko">길이 막혀서 택시가 15분 더 걸립니다.</span>'],words:[["堵车","길이 막히다"]],ask:true},
  "6420":{kind:"变化卡 2 · 변수 카드",role:"取消",ko:"수업 취소",stamp:"变化",items:[
@@ -150,12 +162,13 @@ function show(code,from){const c=CARDS[code];
       <ul>${c.items.map(i=>`<li>${i}</li>`).join('')}</ul>
       ${c.words?`<div class="words">生词 · ${c.words.map(w=>`<b>${w[0]}</b> ${w[1]}`).join(' / ')}</div>`:''}
       ${c.ask?`<div class="ask">${ASK}</div>`:''}
+      ${c.secret?`<div class="secret"><div class="m-head">秘密任务 <span class="ko-i">비밀 미션 · 다른 사람에게 말하지 마세요</span></div><p>${c.secret[0]}<span class="ko">${c.secret[1]}</span></p></div>`:''}
     </div>
     ${c.rule?`<p class="rule">${RULE}</p>`:''}
   </article>
   <button type="button" class="again" id="again">처음으로</button>`;
-  picker.hidden=true;form.hidden=true;out.hidden=false;
-  $('again').addEventListener('click',()=>{out.hidden=true;out.innerHTML='';picker.hidden=false;input.value='';
+  picker.hidden=true;form.hidden=true;out.hidden=false;$('team').hidden=true;
+  $('again').addEventListener('click',()=>{out.hidden=true;out.innerHTML='';picker.hidden=false;$('team').hidden=false;input.value='';
     if(location.hash){history.replaceState(null,'',location.pathname);}});}
 function fromHash(){const k=location.hash.replace('#','');if(VAR[k])show(VAR[k]);}
 window.addEventListener('hashchange',fromHash);fromHash();
