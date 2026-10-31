@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>병원 가는 길 카드</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&display=swap">
+<style>
+/* Layout: one narrow column, a registration-slip (挂号单) card that appears after a 4-digit code */
+:root{
+  --bg:#eef1f3; --paper:#ffffff; --ink:#1d2a33; --muted:#5d6b75;
+  --line:#c9d2d8; --accent:#1f5f8b; --stamp:#b8402f; --wash:#e3edf4;
+  --f-cn:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --f-kr:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-head:"Noto Serif SC","Songti SC",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12181d; --paper:#1b242b; --ink:#e4ebf0; --muted:#9aa8b2;
+  --line:#33424d; --accent:#7fb6dc; --stamp:#e2826f; --wash:#22313b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12181d; --paper:#1b242b; --ink:#e4ebf0; --muted:#9aa8b2;
+  --line:#33424d; --accent:#7fb6dc; --stamp:#e2826f; --wash:#22313b; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-kr);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 40px}
+.wrap{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--f-kr);font-size:22px;font-weight:700;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:22px 20px;display:flex;flex-direction:column;gap:14px}
+label{font-weight:500}
+.row{display:flex;gap:10px}
+input{flex:1;min-width:0;font:700 28px/1 var(--f-cn);letter-spacing:.35em;text-align:center;padding:12px 8px;
+  border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+input:focus{outline:none;border-color:var(--accent)}
+button{font:500 16px var(--f-kr);border:0;border-radius:8px;padding:0 20px;background:var(--accent);color:var(--paper);cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.err{color:var(--stamp);font-size:14px;min-height:1.2em;margin:0}
+.slip{background:var(--paper);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.slip-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:14px 20px;background:var(--wash);border-bottom:1px dashed var(--line)}
+.slip-top .kind{font:700 13px var(--f-kr);letter-spacing:.08em;color:var(--accent)}
+.slip-top .time{font:500 13px var(--f-cn);color:var(--muted);font-variant-numeric:tabular-nums}
+.slip-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.role{display:flex;align-items:center;gap:12px}
+.role h2{font:700 26px/1.2 var(--f-head);margin:0}
+.role span{font-size:15px;color:var(--muted)}
+.stamp{margin-left:auto;border:2px solid var(--stamp);color:var(--stamp);font:700 13px var(--f-cn);padding:2px 8px;border-radius:4px;transform:rotate(-6deg);white-space:nowrap}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+li{font-family:var(--f-cn);font-size:18px;line-height:1.55;padding-left:16px;position:relative}
+li::before{content:"";position:absolute;left:0;top:.7em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+li .sub{display:block;font-size:16px;color:var(--ink);margin-top:2px}
+.ko{display:block;font-family:var(--f-kr);font-size:14px;color:var(--muted)}
+.words{border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted)}
+.words b{font-family:var(--f-cn);color:var(--ink);font-weight:500}
+.ask{font:500 17px var(--f-cn);color:var(--stamp)}
+.rule{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding:12px 20px;margin:0}
+.again{align-self:flex-start;background:transparent;color:var(--accent);border:1.5px solid var(--accent);padding:10px 16px}
+@media (prefers-reduced-motion:no-preference){.slip{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>병원 가는 길 카드</h1>
+    <p>쪽지에 적힌 번호 4자리를 넣으면 내 카드만 보입니다.</p>
+  </header>
+
+  <form class="panel" id="form" autocomplete="off">
+    <label for="code">카드 번호</label>
+    <div class="row">
+      <input id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" aria-describedby="err">
+      <button type="submit" id="go">열기</button>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+  </form>
+
+  <div id="out" hidden></div>
+</div>
+
+<script>
+const RULE='卡片不能给别人看，只能用汉语说。<span class="ko">카드를 보여 주지 말고, 중국어로만 말하세요.</span>';
+const ASK='请再想一想：你们的决定要改吗？<span class="ko">결정을 바꿔야 할까요?</span>';
+const CARDS={
+ "2718":{kind:"角色卡 1 · 역할 카드",role:"病人",ko:"환자",items:[
+   "我发烧，头疼。","吃了药，但是没有好转。","我汉语不太好，怕听不懂医生的话。","我钱包里只有 20 块钱。","我今天一定要看病。"],rule:true},
+ "3142":{kind:"角色卡 2 · 역할 카드",role:"朋友",ko:"친구",items:[
+   "我五点有汉语课，不能迟到。",
+   '我有地图：<span class="sub">小医院：走路 20 分钟，打车 5 分钟</span><span class="sub">大医院：打车 20 分钟，坐公交车 40 分钟</span>',
+   "我想帮朋友，可是汉语课也很重要。"],words:[["公交车","버스"]],rule:true},
+ "1618":{kind:"角色卡 3 · 역할 카드",role:"宿舍管理员",ko:"기숙사 관리인",items:[
+   "小医院：四点停止看病，没有翻译。","大医院：六点停止看病，有韩语翻译。",
+   "打车：到小医院 10 块，到大医院 35 块。","坐公交车：2 块。"],words:[["停止看病","진료 마감"],["翻译","통역"]],rule:true},
+ "5301":{kind:"变化卡 A · 변수 카드",role:"堵车",ko:"교통 체증",stamp:"变化",items:[
+   '路上堵车，打车要多 15 分钟。<span class="ko">길이 막혀서 택시가 15분 더 걸립니다.</span>'],words:[["堵车","길이 막히다"]],ask:true},
+ "6420":{kind:"变化卡 B · 변수 카드",role:"取消",ko:"수업 취소",stamp:"变化",items:[
+   '朋友的汉语课取消了。<span class="ko">친구의 중국어 수업이 취소되었습니다.</span>'],words:[["取消","취소하다"]],ask:true},
+ "7539":{kind:"变化卡 C · 변수 카드",role:"下雨",ko:"비",stamp:"变化",items:[
+   '下雨了，公交车很慢，要多 20 分钟。<span class="ko">비가 와서 버스가 20분 더 걸립니다.</span>'],ask:true},
+ "8648":{kind:"变化卡 D · 변수 카드",role:"借钱",ko:"돈 빌리기",stamp:"变化",items:[
+   '宿舍管理员可以借你 20 块钱。<span class="ko">관리인이 20위안을 빌려줄 수 있습니다.</span>'],words:[["借","빌려주다"]],ask:true}
+};
+const form=document.getElementById('form'),input=document.getElementById('code'),err=document.getElementById('err'),out=document.getElementById('out');
+input.addEventListener('input',()=>{input.value=input.value.replace(/\D/g,'').slice(0,4);err.textContent='';});
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  const c=CARDS[input.value];
+  if(!c){err.textContent=input.value.length<4?'번호 4자리를 모두 넣어 주세요.':'없는 번호입니다. 쪽지의 번호를 다시 확인해 주세요.';return;}
+  out.innerHTML=`<article class="slip">
+    <div class="slip-top"><span class="kind">${c.kind}</span><span class="time">现在 下午 3:50</span></div>
+    <div class="slip-body">
+      <div class="role"><h2>${c.role}</h2><span>${c.ko}</span><span class="stamp">${c.stamp||'挂号'}</span></div>
+      <ul>${c.items.map(i=>`<li>${i}</li>`).join('')}</ul>
+      ${c.words?`<div class="words">生词 · ${c.words.map(w=>`<b>${w[0]}</b> ${w[1]}`).join(' / ')}</div>`:''}
+      ${c.ask?`<div class="ask">${ASK}</div>`:''}
+    </div>
+    ${c.rule?`<p class="rule">${RULE}</p>`:''}
+  </article>
+  <button type="button" class="again" id="again">다른 번호 넣기</button>`;
+  form.hidden=true;out.hidden=false;
+  document.getElementById('again').addEventListener('click',()=>{out.hidden=true;out.innerHTML='';form.hidden=false;input.value='';input.focus();});
+});
+</script>
+</body>
+</html>
